@@ -2,42 +2,40 @@
 
 namespace App\Middleware;
 
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use App\Services\Factory;
-use App\Utils\Helper;
+use Slim\Http\Request;
+use Slim\Http\Response;
 
 class Api
 {
+    use Helper;
 
-    public function __invoke(ServerRequestInterface $request,ResponseInterface $response, $next)
+    public function __invoke(Request $request, Response $response, $next)
     {
-        if(Helper::isTesting()){
-            $response = $next($request, $response);
-            return $response;
+        $user = $this->getUserFromReq($request);
+        if (!$user || !$user->isLogin) {
+            return $this->denied($response);
         }
-        $accessToken = Helper::getTokenFromReq($request);
-        if ($accessToken==null){
-            $res['ret'] = 0;
-            $res['msg'] = "token is null";
-            $newResponse = $response->withJson($res,401);
-            return $newResponse;
-        }
-        $storage = Factory::createTokenStorage();
-        $token = $storage->get($accessToken);
-        if ($token==null){
-            $res['ret'] = 0;
-            $res['msg'] = "token is null";
-            $newResponse = $response->withJson($res,401);
-            return $newResponse;
-        }
-        if ($token->expireTime < time()){
-            $res['ret'] = 0;
-            $res['msg'] = "token is expire";
-            $newResponse = $response->withJson($res,401);
-            return $newResponse;
+        if (!$user->isAdmin()) {
+            $id = $request->getAttribute('routeInfo')[2]['id'];
+            if ($id != $user->id) {
+                return $this->denied($response);
+            }
         }
         $response = $next($request, $response);
+
         return $response;
+    }
+
+    /**
+     * @param Response $response
+     * @return Response
+     */
+    public function denied(Response $response)
+    {
+        $newResponse = $response->withJson([
+            "error_code" => 401,
+            "message" => "Access Denied",
+        ], 401);
+        return $newResponse;
     }
 }

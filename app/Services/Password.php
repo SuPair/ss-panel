@@ -1,22 +1,43 @@
 <?php
 
-
 namespace App\Services;
 
+use App\Contracts\Codes\Cfg;
 use App\Models\PasswordReset;
 use App\Utils\Tools;
+use App\Contracts\MailService;
+use Exception;
 
 /***
  * Class Password
  * @package App\Services
  */
-class Password
+class Password implements Cfg
 {
     /**
+     * @var MailService
+     */
+    private $mail;
+
+    public function __construct()
+    {
+        $this->mail = $this->getMailService();
+    }
+
+    /**
+     * @return MailService
+     */
+    private function getMailService()
+    {
+        return app()->make(MailService::class);
+    }
+
+    /**
      * @param $email string
+     *
      * @return bool
      */
-    public static function sendResetEmail($email)
+    public function sendResetEmail($email)
     {
         $pwdRst = new PasswordReset();
         $pwdRst->email = $email;
@@ -26,23 +47,29 @@ class Password
         if (!$pwdRst->save()) {
             return false;
         }
-        $subject = Config::get('appName') . "重置密码";
-        $resetUrl = Config::get('baseUrl') . "/password/token/" . $pwdRst->token;
+        $subject = sprintf("%s   %s", db_config(self::AppName), lang('auth.reset-password'));
+        $resetUrl = self::genUri($pwdRst->token);
         try {
-            Mail::send($email, $subject, 'password/reset.tpl', [
-                "resetUrl" => $resetUrl
-            ], [
-                //BASE_PATH.'/public/assets/email/styles.css'
+            // @todo trans email template
+            $template = 'email/password/reset';
+            $this->mail->send($email, $subject, $template, [
+                'subject' => $subject,
+                'resetUrl' => $resetUrl
             ]);
         } catch (Exception $e) {
-            return false;
+            throw $e;
         }
+
         return true;
     }
 
     public static function resetBy($token, $password)
     {
-
     }
 
+    public static function genUri($token)
+    {
+        $uri = db_config(self::AppUri);
+        return sprintf("%s/password/%s", rtrim($uri,'/'), $token);
+    }
 }

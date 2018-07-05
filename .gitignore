@@ -2,3 +2,7 @@
 .env
 vendor/
 composer.phar
+build/
+composer
+node_modules/
+npm-debug.log

@@ -1,36 +1,29 @@
 <?php
 
-
 namespace App\Middleware;
 
-use App\Services\Config;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Message\ResponseInterface;
-use App\Services\Factory;
-use App\Utils\Helper;
+use App\Utils\Helper as HelperUtil;
+use Slim\Http\Request;
+use Slim\Http\Response;
+use App\Contracts\Codes\Cfg;
 
-class Mu
+class Mu implements Cfg
 {
-    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, $next)
+    public function __invoke(Request $request, Response $response, $next)
     {
-        if(Helper::isTesting()){
-            $response = $next($request, $response);
-            return $response;
-        }
-        $key = Helper::getMuKeyFromReq($request);
+        $key = HelperUtil::getMuKeyFromReq($request);
         if ($key == null) {
-            $res['ret'] = 0;
-            $res['msg'] = "key is null";
-            $newResponse = $response->withJson($res,401);
+            $newResponse = $response->withJson([], 401);
+
             return $newResponse;
         }
-        if ($key != Config::get('muKey')) {
-            $res['ret'] = 0;
-            $res['msg'] = "token is  invalid";
-            $newResponse = $response->withJson($res,401);
+        if ($key != db_config(self::MuKey)) {
+            $newResponse = $response->withJson([], 401);
+
             return $newResponse;
         }
         $response = $next($request, $response);
+
         return $response;
     }
 }

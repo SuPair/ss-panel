@@ -2,59 +2,54 @@
 
 namespace App\Controllers;
 
-use App\Services\Auth;
-use App\Services\View;
+use Slim\Http\Response;
+use App\Services\Factory;
+use Interop\Container\ContainerInterface;
+use Pongtan\Http\Controller;
+use Pongtan\View\ViewTrait;
+use App\Models\User;
 
 /**
- * BaseController
+ * BaseController.
  */
-class BaseController
+class BaseController extends Controller
 {
-
-    protected $view;
-
-    protected $smarty;
-
-    protected $app;
-
+    use ViewTrait;
 
     /**
-     * @return \Smarty
+     * @var \Psr\Log\LoggerInterface
      */
-    public function smarty()
+    public $logger;
+
+    /**
+     * @var User
+     */
+    protected $user;
+
+    public function __construct(ContainerInterface $ci)
     {
-        $this->smarty = View::getSmarty();
-        return $this->smarty;
+        $this->logger = Factory::getLogger();
+        parent::__construct($ci);
     }
 
     /**
-     * @return \Smarty
+     * @return User
      */
-    public function view()
+    public function getUser()
     {
-        return $this->smarty();
+        return user();
     }
 
     /**
-     * @param $response
-     * @param $res
+     * @param Response $response
+     * @param $data
      * @param int $statusCode
      * @return mixed
      */
-    public function echoJson($response, $res, $statusCode = 200)
+    public function echoJsonWithData(Response $response, $data = [], $statusCode = 200)
     {
-        $newResponse = $response->withJson($res, $statusCode);
-        return $newResponse;
-    }
-
-    /**
-     * @param $response
-     * @param $to
-     * @return mixed
-     */
-    public function redirect($response, $to)
-    {
-        $newResponse = $response->withStatus(302)->withHeader('Location', $to);
-        return $newResponse;
+        return $this->echoJson($response, [
+            'data' => $data,
+        ], $statusCode);
     }
 }

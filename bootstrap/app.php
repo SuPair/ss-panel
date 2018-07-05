@@ -1,25 +1,43 @@
 <?php
 
 /***
- * ss-panel v3 Bootstrap
+ * Pontang Framework Bootstrap
  * @author orvice
- * @email sspanel@orx.me
- * @url https://github.com/orvice/ss-panel
+ * @email pongtan@orx.me
+ * @url https://github.com/Pongtan/LightFish
  */
 
-use App\Services\Boot;
+// define("VERSION", '4.0.0');
 
-//  BASE_PATH
-define('BASE_PATH', __DIR__ . '/../');
-define('VERSION', '3.4.0');
+// @todo debug bar support
+// use Tracy\Debugger;
 
-// Vendor Autoload
-require BASE_PATH . '/vendor/autoload.php';
+$basePath = realpath(__DIR__ . '/../');
+require_once __DIR__ . '/../vendor/autoload.php';
 
-Boot::loadEnv();
-Boot::setDebug();
-Boot::setVersion(VERSION);
-// config time zone
-Boot::setTimezone();
-// Init db
-Boot::bootDb();
+try {
+    (new Dotenv\Dotenv(__DIR__ . '/../'))->load();
+} catch (Dotenv\Exception\InvalidPathException $e) {
+}
+
+/**
+ * New App.
+ */
+$app = new \Pongtan\App(__DIR__ . '/../');
+
+/*
+ * Register Service Provider
+ */
+$app->register(\Pongtan\Providers\ConfigServiceProvider::class);
+$app->register(\Pongtan\Providers\LoggerServiceProvider::class);
+$app->register(\Pongtan\Providers\LangServiceProvider::class);
+$app->register(\Pongtan\Providers\ViewServiceProvider::class);
+$app->register(\Pongtan\Providers\EloquentServiceProvider::class);
+$app->register(\Pongtan\Providers\CacheServiceProvider::class);
+$app->register(\App\Providers\TokenStorageServiceProvider::class);
+$app->register(\App\Providers\DbConfigServiceProvider::class);
+$app->register(\App\Providers\MailServiceProvider::class);
+
+require $basePath . '/routes/web.php';
+
+return $app;

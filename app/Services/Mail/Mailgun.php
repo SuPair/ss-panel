@@ -2,10 +2,10 @@
 
 namespace App\Services\Mail;
 
-use App\Services\Config;
+use App\Contracts\Codes\Cfg;
 use Mailgun\Mailgun as MailgunService;
 
-class Mailgun extends Base
+class Mailgun extends Base implements Cfg
 {
     private $config, $mg, $domain, $sender;
 
@@ -15,9 +15,9 @@ class Mailgun extends Base
     public function __construct()
     {
         $this->config = $this->getConfig();
-        $this->mg = new MailgunService($this->config["key"]);
-        $this->domain = $this->config["domain"];
-        $this->sender = $this->config["sender"];
+        $this->mg = new MailgunService($this->config['key']);
+        $this->domain = $this->config['domain'];
+        $this->sender = $this->config['sender'];
     }
 
     /**
@@ -26,26 +26,31 @@ class Mailgun extends Base
     public function getConfig()
     {
         return [
-            "key" => Config::get('mailgun_key'),
-            "domain" => Config::get('mailgun_domain'),
-            "sender" => Config::get('mailgun_sender')
+            'key' => db_config(self::MailgunKey),
+            'domain' => db_config(self::MailgunDomain),
+            'sender' => db_config(self::MailgunSender),
         ];
     }
 
     /**
+     * @param $to
+     * @param $subject
+     * @param $template
+     * @param $params
+     * @param null $file
      * @codeCoverageIgnore
      */
-    public function send($to, $subject, $text, $file)
+    public function send($to, $subject, $template, $params, $file = null)
     {
         $this->mg->sendMessage($this->domain,
             [
                 'from' => $this->sender,
                 'to' => $to,
                 'subject' => $subject,
-                'html' => $text
+                'html' => $this->genHtml($template,$params),
             ],
             [
-                'inline' => $file
+                'inline' => $file,
             ]
         );
     }

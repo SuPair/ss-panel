@@ -2,7 +2,7 @@
 
 namespace Tests;
 
-use App\Services\Config;
+use PHPUnit\Framework\TestCase as TestCaseLib;
 use PHPUnit_Framework_TestCase;
 use Slim\Http\Body;
 use Slim\Http\Environment;
@@ -12,11 +12,19 @@ use Slim\Http\RequestBody;
 use Slim\Http\Response;
 use Slim\Http\Uri;
 
-class TestCase extends PHPUnit_Framework_TestCase
+class TestCase extends TestCaseLib
 {
     public $app;
 
-    public $request, $response;
+    /**
+     * @var Request
+     */
+    public $request;
+
+    /**
+     * @var Response
+     */
+    public $response;
 
     public function setUp()
     {
@@ -28,6 +36,7 @@ class TestCase extends PHPUnit_Framework_TestCase
      * @param $path
      * @param $body
      * @param $options
+     *
      * @return Request
      */
     protected function requestFactory($method, $path, $body = [], $options = [])
@@ -48,7 +57,7 @@ class TestCase extends PHPUnit_Framework_TestCase
         $env = Environment::mock([
             'REQUEST_URI' => $path,
             'REQUEST_METHOD' => $envMethod,
-            'HTTP_CONTENT_TYPE' => 'multipart/form-data; boundary=---foo'
+            'HTTP_CONTENT_TYPE' => 'multipart/form-data; boundary=---foo',
         ]);
         $serverParams = $env->all();
         $body = $this->buildBody($body);
@@ -57,11 +66,13 @@ class TestCase extends PHPUnit_Framework_TestCase
         // $request = new Request($method, $uri, $headers, $cookies, $serverParams, $body, []);
         $request = Request::createFromEnvironment($env);
         unset($_POST);
+
         return $request;
     }
 
     /**
      * @param $input
+     *
      * @return Body
      */
     protected function buildBody($input)
@@ -70,20 +81,23 @@ class TestCase extends PHPUnit_Framework_TestCase
             if (is_array($input)) {
                 return http_build_query($input);
             }
+
             return $input;
         };
         $content = $getContent();
         $body = new RequestBody();
         $body->write($content);
         $body->rewind();
+
         return $body;
     }
 
     public function createApp()
     {
         // Build App
-        $app = require __DIR__ . '/../app/routes.php';
+        $app = require __DIR__ . '/../bootstrap/app.php';
         $app->run(true);
+
         return $app;
     }
 
@@ -121,20 +135,25 @@ class TestCase extends PHPUnit_Framework_TestCase
         $this->request('DELETE', $path, $body, $options);
     }
 
-    /**
-     * Set env in prod
-     */
-    public function setProdEnv()
+    public function setEnv($key, $value)
     {
-        Config::set('env', 'prod');
+        putenv("$key=$value");
     }
 
     /**
-     * Set testing env
+     * Set env in prod.
+     */
+    public function setProdEnv()
+    {
+        $this->setEnv('env', 'prod');
+    }
+
+    /**
+     * Set testing env.
      */
     public function setTestingEnv()
     {
-        Config::set('env', 'testing');
+        $this->setEnv('env', 'testing');
     }
 
     /**
@@ -149,5 +168,4 @@ class TestCase extends PHPUnit_Framework_TestCase
         $data = json_decode($response->getBody(), true);
         $this->assertEquals($code, $data['error_code']);
     }
-
 }

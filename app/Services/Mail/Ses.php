@@ -22,15 +22,13 @@ class Ses extends Base
      */
     public function getSender()
     {
-        return Config::get('aws_ses_sender');
     }
 
     /**
      * @codeCoverageIgnore
      */
-    public function send($to, $subject, $text)
+    public function send($to, $subject, $text,$file)
     {
-
         $this->client->sendEmail([
             'Destination' => [ // REQUIRED
                 'ToAddresses' => [$to],
@@ -45,7 +43,7 @@ class Ses extends Base
                     ],
                 ],
                 'Subject' => [ // REQUIRED
-                    'Data' => $subject, // REQUIRED
+                    'Data' => $subject// REQUIRED
                 ],
             ],
             'Source' => $this->getSender(), // REQUIRED
